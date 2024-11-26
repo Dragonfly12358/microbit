@@ -1,20 +1,37 @@
 from microbit import *
 import music
 
-# Thời gian Pomodoro (đơn vị: giây)
-WORK_TIME = 25 * 60  # 25 phút làm việc
-BREAK_TIME = 5 * 60  # 5 phút nghỉ
+# Thời gian Pomodoro (đơn vị: phút)
+WORK_TIME = 2  # 25 phút làm việc
+BREAK_TIME = 5   # 5 phút nghỉ
 
 # Biến trạng thái
 is_running = False  # Trạng thái: Đang chạy hay không
 is_working = True   # Trạng thái: Đang làm việc hay nghỉ
-time_left = WORK_TIME  # Thời gian còn lại
+time_left = WORK_TIME  # Thời gian còn lại (phút)
 
-def show_time(t):
-    """Hiển thị thời gian còn lại trên LED."""
-    minutes = t // 60
-    seconds = t % 60
-    display.scroll(str(minutes) + ":" + str(seconds))  # Hiển thị thời gian
+def show_leds(current_minute, total_minutes):
+    """Hiển thị số phút còn lại qua đèn LED."""
+    for y in range(5):
+        for x in range(5):
+            idx = y * 5 + x
+            if idx < current_minute:
+                display.set_pixel(x, y, 7)  # Sáng đèn
+            elif idx < total_minutes:
+                display.set_pixel(x, y, 3)  # Đèn mờ (chưa đến phút đó)
+            else:
+                display.set_pixel(x, y, 0)  # Tắt đèn
+
+def blink_current_led(current_minute):
+    """Nhấp nháy LED hiện tại 30 lần trong một phút."""
+    if 1 <= current_minute <= 25:  # Chỉ xử lý nếu LED hợp lệ
+        x = (current_minute - 1) % 5
+        y = (current_minute - 1) // 5
+        for _ in range(30):  # Nhấp nháy 30 lần
+            display.set_pixel(x, y, 0)  # Tắt LED
+            sleep(1000)  # 0.5 giây
+            display.set_pixel(x, y, 9)  # Sáng lại LED
+            sleep(1000)  # 0.5 giây
 
 def pomodoro_completed():
     """Xử lý khi hoàn thành một Pomodoro."""
@@ -28,10 +45,10 @@ def pomodoro_completed():
 while True:
     if is_running:
         if time_left > 0:
-            sleep(1000)  # Đếm từng giây
+            current_minute = (WORK_TIME - time_left if is_working else BREAK_TIME - time_left) + 1
+            show_leds(current_minute, WORK_TIME if is_working else BREAK_TIME)
+            blink_current_led(current_minute)  # Nhấp nháy LED trong một phút
             time_left -= 1
-            if time_left % 10 == 0:  # Hiển thị thời gian mỗi 10 giây
-                show_time(time_left)
         else:
             pomodoro_completed()
             # Đổi trạng thái
